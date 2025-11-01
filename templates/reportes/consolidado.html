@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Consolidado de Asistencia{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-dark text-white">
+    <h5 class="mb-0"><i class="bi bi-clipboard-check me-2"></i> Consolidado de asistencia</h5>
+  </div>
+  <div class="card-body">
+    <form method="get" class="row g-3 mb-4">
+      <div class="col-md-4">
+        <label class="form-label">📅 Desde</label>
+        <input type="date" class="form-control" name="desde" value="{{ desde }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">📅 Hasta</label>
+        <input type="date" class="form-control" name="hasta" value="{{ hasta }}">
+      </div>
+      <div class="col-md-4 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-funnel-fill me-1"></i> Aplicar filtros
+        </button>
+      </div>
+    </form>
+
+    <div class="table-responsive">
+      <table class="table table-bordered text-center align-middle">
+        <thead class="table-secondary">
+          <tr>
+            <th>👤 Docente</th>
+            <th>🕒 Jornada</th>
+            <th>📅 Faltas</th>
+            <th>📝 Licencias</th>
+            <th>⏳ Horas incumplidas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in consolidado %}
+          <tr>
+            <td class="text-start">{{ r.docente }}</td>
+            <td>{{ r.jornada|capitalize }}</td>
+            <td><span class="badge bg-danger">{{ r.faltas }}</span></td>
+            <td><span class="badge bg-info">{{ r.licencias }}</span></td>
+            <td><span class="badge bg-warning text-dark">{{ r.horas_incumplidas }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

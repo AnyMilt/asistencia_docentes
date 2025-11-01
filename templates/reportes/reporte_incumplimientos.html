@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-dark text-white">
+    <h5 class="mb-0"><i class="bi bi-bar-chart-fill me-2"></i> Resumen de incumplimientos por docente</h5>
+  </div>
+  <div class="card-body">
+    <a href="{{ url_for('reportes.exportar_pdf', **request.args) }}" class="btn btn-outline-danger mb-3" target="_blank">
+  <i class="bi bi-file-earmark-pdf-fill me-1"></i> Descargar PDF
+</a>
+    <!-- Filtros -->
+    <form method="GET" class="row g-3 mb-4">
+      <div class="col-md-3">
+        <label for="jornada" class="form-label">🕒 Jornada</label>
+        <select class="form-select" name="jornada">
+          <option value="">Todas</option>
+          <option value="matutina" {% if request.args.get('jornada') == 'matutina' %}selected{% endif %}>Matutina</option>
+          <option value="vespertina" {% if request.args.get('jornada') == 'vespertina' %}selected{% endif %}>Vespertina</option>
+          <option value="doble" {% if request.args.get('jornada') == 'doble' %}selected{% endif %}>Doble jornada</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="desde" class="form-label">📅 Desde</label>
+        <input type="date" class="form-control" name="desde" value="{{ request.args.get('desde') }}">
+      </div>
+      <div class="col-md-3">
+        <label for="hasta" class="form-label">📅 Hasta</label>
+        <input type="date" class="form-control" name="hasta" value="{{ request.args.get('hasta') }}">
+      </div>
+     <div class="col-md-3">
+      <label for="docente" class="form-label">👤 Docente(s)</label>
+      <select class="form-select select-docentes" name="docente" multiple>
+        {% for d in todos_los_docentes %}
+        <option value="{{ d.id }}" {% if d.id|string in request.args.getlist('docente') %}selected{% endif %}>{{ d.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+      <div class="col-md-12 d-flex justify-content-end">
+        <button type="submit" class="btn btn-outline-dark">
+          <i class="bi bi-funnel-fill me-1"></i> Aplicar filtros
+        </button>
+      </div>
+    </form>
+
+    <!-- Tabla resumen -->
+    {% if resumen %}
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover align-middle text-center">
+        <thead class="table-secondary">
+          <tr>
+            <th>👤 Docente</th>
+            <th>🕒 Jornada</th>
+            <th>⏰ Entradas tarde</th>
+            <th>🚪 Salidas temprano</th>
+            <th>⚠ Incumplimientos</th>
+            <th>⏳ Tiempo total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in resumen %}
+          <tr class="table-{{ 'info' if r.jornada == 'matutina' else 'success' if r.jornada == 'vespertina' else 'warning' }}">
+            <td class="text-start">{{ r.nombre }}</td>
+            <td>{{ r.jornada|capitalize }}</td>
+            <td>
+              {{ r.entrada_tarde }}
+              {% if r.entrada_tarde > 0 %}<i class="bi bi-clock-fill text-danger ms-1"></i>{% endif %}
+            </td>
+            <td>
+              {{ r.salida_temprano }}
+              {% if r.salida_temprano > 0 %}<i class="bi bi-door-open-fill text-warning ms-1"></i>{% endif %}
+            </td>
+            <td><span class="badge bg-danger">{{ r.incumplimientos }}</span></td>
+            <td>{{ r.tiempo_total.seconds // 3600 }}h {{ (r.tiempo_total.seconds // 60) % 60 }}m</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="alert alert-success text-center">
+      <i class="bi bi-check-circle-fill me-2"></i> No se registraron incumplimientos para los filtros seleccionados.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

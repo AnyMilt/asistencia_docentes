@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="bi bi-person-badge-fill me-2"></i>Listado de docentes
+        </h5>
+        <div>
+          <a href="{{ url_for('docentes.carga_masiva') }}" class="btn btn-light btn-sm me-2">
+            <i class="bi bi-upload me-1"></i> Carga masiva
+          </a>
+          <a href="{{ url_for('docentes.nuevo_docente') }}" class="btn btn-light btn-sm">
+            <i class="bi bi-person-plus-fill me-1"></i> Nuevo docente
+          </a>
+        </div>
+    </div>
+  <div class="card-body">
+    <!-- Filtros -->
+    <form method="GET" class="row g-3 mb-4">
+      <div class="col-md-4">
+        <label for="jornada" class="form-label">🕒 Jornada</label>
+        <select class="form-select" name="jornada">
+          <option value="">Todas</option>
+          <option value="matutina" {% if request.args.get('jornada') == 'matutina' %}selected{% endif %}>Matutina</option>
+          <option value="vespertina" {% if request.args.get('jornada') == 'vespertina' %}selected{% endif %}>Vespertina</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label for="estado" class="form-label">🔘 Estado</label>
+        <select class="form-select" name="estado">
+          <option value="">Todos</option>
+          <option value="activo" {% if request.args.get('estado') == 'activo' %}selected{% endif %}>Activo</option>
+          <option value="inactivo" {% if request.args.get('estado') == 'inactivo' %}selected{% endif %}>Inactivo</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+  <label for="tipo" class="form-label">👥 Tipo de personal</label>
+  <select class="form-select" name="tipo">
+    <option value="">Todos</option>
+    <option value="DOCENTE" {% if request.args.get('tipo') == 'DOCENTE' %}selected{% endif %}>Docente</option>
+    <option value="ADMINISTRATIVO" {% if request.args.get('tipo') == 'ADMINISTRATIVO' %}selected{% endif %}>Administrativo</option>
+    <option value="CONSERJE" {% if request.args.get('tipo') == 'CONSERJE' %}selected{% endif %}>Conserje</option>
+    <option value="DECE" {% if request.args.get('tipo') == 'DECE' %}selected{% endif %}>DECE</option>
+  </select>
+</div>
+      <div class="col-md-4 d-flex align-items-end">
+        <button type="submit" class="btn btn-outline-primary w-100">
+          <i class="bi bi-funnel-fill me-1"></i> Aplicar filtros
+        </button>
+      </div>
+    </form>
+
+    <table class="table table-bordered table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Nombre</th>
+          <th>Jornada</th>
+          <th>Estado</th>
+          <th>Tipo</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in docentes %}
+        <tr>
+          <td>{{ d.nombre }}</td>
+          <td>{{ d.jornada|capitalize }}</td>
+          <td>{{ d.tipo }}</td>
+          <td>
+            {% if d.activo %}
+              <span class="badge bg-success">Activo</span>
+            {% else %}
+              <span class="badge bg-secondary">Inactivo</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+             <!-- Ver QR -->
+            <a href="{{ url_for('asistencia.generar_qr', id=d.id) }}" class="btn btn-sm btn-info me-1" title="Ver QR">
+              <i class="bi bi-qr-code"></i>
+            </a>
+
+            <a href="{{ url_for('docentes.editar_docente', id=d.id) }}" class="btn btn-sm btn-warning me-1" title="Editar">
+              <i class="bi bi-pencil-fill"></i>
+            </a>
+
+            {% if d.activo %}
+            <form action="{{ url_for('docentes.desactivar_docente', id=d.id) }}" method="POST" style="display:inline;">
+              <button type="submit" class="btn btn-sm btn-outline-danger me-1" title="Desactivar"
+                      onclick="return confirm('¿Desactivar este docente?')">
+                <i class="bi bi-person-x-fill"></i>
+              </button>
+            </form>
+            {% else %}
+            <form action="{{ url_for('docentes.reactivar_docente', id=d.id) }}" method="POST" style="display:inline;">
+              <button type="submit" class="btn btn-sm btn-outline-success me-1" title="Reactivar"
+                      onclick="return confirm('¿Reactivar este docente?')">
+                <i class="bi bi-person-check-fill"></i>
+              </button>
+            </form>
+            {% endif %}
+
+            <form action="{{ url_for('docentes.eliminar_docente', id=d.id) }}" method="POST" style="display:inline;">
+              <button type="submit" class="btn btn-sm btn-danger" title="Eliminar permanentemente"
+                      onclick="return confirm('¿Eliminar este docente definitivamente?')">
+                <i class="bi bi-trash-fill"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

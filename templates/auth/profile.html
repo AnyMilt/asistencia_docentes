@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-person-circle me-2"></i>Perfil de Usuario</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Usuario:</strong> {{ usuario.username }}</p>
+                            <p><strong>Rol:</strong> 
+                                <span class="badge bg-{{ 'danger' if usuario.is_admin() else 'primary' }}">
+                                    {{ 'Administrador' if usuario.is_admin() else 'Talento Humano' }}
+                                </span>
+                            </p>
+                            <p><strong>Estado:</strong> 
+                                <span class="badge bg-{{ 'success' if usuario.activo else 'danger' }}">
+                                    {{ 'Activo' if usuario.activo else 'Inactivo' }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Fecha de creación:</strong> {{ usuario.fecha_creacion.strftime('%d/%m/%Y') if usuario.fecha_creacion else 'N/A' }}</p>
+                            <p><strong>Último acceso:</strong> {{ usuario.ultimo_acceso.strftime('%d/%m/%Y %H:%M') if usuario.ultimo_acceso else 'Nunca' }}</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('auth.change_password') }}" class="btn btn-warning">
+                            <i class="bi bi-key me-2"></i>Cambiar Contraseña
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

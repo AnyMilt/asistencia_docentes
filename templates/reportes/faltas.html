@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Faltas Injustificadas{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-warning">
+  <div class="card-header bg-warning text-dark">
+    <h5 class="mb-0"><i class="bi bi-person-x-fill me-2"></i> Faltas injustificadas</h5>
+  </div>
+  <div class="card-body">
+    <form method="get" class="row g-3 mb-4">
+      <div class="col-md-6">
+        <label for="fecha" class="form-label">Fecha</label>
+        <input type="date" class="form-control" id="fecha" name="fecha">
+      </div>
+      <div class="col-md-6 d-flex align-items-end">
+        <button type="submit" class="btn btn-warning w-100"><i class="bi bi-search me-1"></i> Consultar</button>
+      </div>
+    </form>
+
+    <div class="alert alert-warning d-flex align-items-center" role="alert">
+      <i class="bi bi-info-circle-fill me-2"></i>
+      Se excluyen docentes con licencias registradas en la fecha seleccionada.
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover align-middle">
+        <thead class="table-warning">
+          <tr>
+            <th>Docente</th>
+            <th>Fecha</th>
+            <th>Jornada</th>
+            <th>Motivo</th>
+          </tr>
+        </thead>
+        <tbody>
+  {% for d in faltantes %}
+    <tr>
+      <td>{{ d.nombre }}</td>
+      <td>{{ fecha.strftime('%d/%m/%Y') }}</td>
+      <td>{{ d.jornada }}</td>
+      <td>Sin registro</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4" class="text-center text-muted">Sin faltas injustificadas</td></tr>
+  {% endfor %}
+</tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

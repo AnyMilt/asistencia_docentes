@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Reportes de Asistencia{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-primary text-white">
+    <h5 class="mb-0"><i class="bi bi-clipboard-data me-2"></i> Reportes de asistencia institucional</h5>
+  </div>
+  <div class="card-body">
+    <div class="row g-4">
+      <!-- Incumplimientos -->
+      <div class="col-md-6">
+        <a href="{{ url_for('reportes.reporte_incumplimientos') }}" class="text-decoration-none">
+          <div class="card border-danger h-100">
+            <div class="card-body">
+              <h6 class="card-title text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Incumplimientos</h6>
+              <p class="card-text">Atrasos, salidas tempranas y acumulados por jornada.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Asistencia diaria -->
+      <div class="col-md-6">
+        <a href="{{ url_for('reportes.reporte_asistencia_diaria') }}" class="text-decoration-none">
+          <div class="card border-info h-100">
+            <div class="card-body">
+              <h6 class="card-title text-info"><i class="bi bi-calendar-check-fill me-2"></i>Asistencia diaria</h6>
+              <p class="card-text">Listado completo por fecha con filtros por jornada y docente.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Faltas injustificadas -->
+      <div class="col-md-6">
+        <a href="{{ url_for('reportes.reporte_faltas') }}" class="text-decoration-none">
+          <div class="card border-warning h-100">
+            <div class="card-body">
+              <h6 class="card-title text-warning"><i class="bi bi-person-x-fill me-2"></i>Faltas injustificadas</h6>
+              <p class="card-text">Docentes sin registro en fechas laborales, excluyendo licencias.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Resumen mensual -->
+      <div class="col-md-6">
+        <a href="{{ url_for('reportes.reporte_resumen_mensual') }}" class="text-decoration-none">
+          <div class="card border-success h-100">
+            <div class="card-body">
+              <h6 class="card-title text-success"><i class="bi bi-bar-chart-line-fill me-2"></i>Resumen mensual</h6>
+              <p class="card-text">Totales por docente: asistencias, atrasos, faltas y licencias.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Consolidado de asistencia -->
+<div class="col-md-6">
+  <a href="{{ url_for('reportes.reporte_consolidado') }}" class="text-decoration-none">
+    <div class="card border-dark h-100">
+      <div class="card-body">
+        <h6 class="card-title text-dark">
+          <i class="bi bi-clipboard-check-fill me-2"></i>Consolidado de asistencia
+        </h6>
+        <p class="card-text">
+          Días de faltas, licencias y horas incumplidas por docente en un rango de fechas.
+        </p>
+      </div>
+    </div>
+  </a>
+</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

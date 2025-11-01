@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Resumen Mensual{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-success">
+  <div class="card-header bg-success text-white">
+    <h5 class="mb-0"><i class="bi bi-bar-chart-line-fill me-2"></i> Resumen mensual</h5>
+  </div>
+  <div class="card-body">
+    <form method="get" class="row g-3 mb-4">
+      <div class="col-md-4">
+        <label for="mes" class="form-label">Mes</label>
+        <input type="month" class="form-control" id="mes" name="mes">
+      </div>
+      <div class="col-md-4">
+        <label for="docente" class="form-label">Docente</label>
+        <input type="text" class="form-control" id="docente" name="docente" placeholder="Nombre o cédula">
+      </div>
+      <div class="col-md-4 d-flex align-items-end">
+        <button type="submit" class="btn btn-success w-100"><i class="bi bi-bar-chart-fill me-1"></i> Generar</button>
+      </div>
+    </form>
+
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover align-middle">
+        <thead class="table-success">
+          <tr>
+            <th>Docente</th>
+            <th>Asistencias</th>
+            <th>Atrasos</th>
+            <th>Faltas</th>
+            <th>Licencias</th>
+          </tr>
+        </thead>
+        <tbody>
+  {% for nombre, datos in resumen.items() %}
+    <tr>
+      <td>{{ nombre }}</td>
+      <td>{{ datos.asistencias }}</td>
+      <td>{{ datos.atrasos }}</td>
+      <td>{{ datos.ausentes }}</td>
+      <td>{{ datos.pendientes }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5" class="text-center text-muted">Sin datos para el mes seleccionado</td></tr>
+  {% endfor %}
+</tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

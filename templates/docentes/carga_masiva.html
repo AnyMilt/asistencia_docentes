@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-primary text-white">
+    <h5 class="mb-0"><i class="bi bi-upload me-2"></i> Carga masiva de docentes</h5>
+  </div>
+  <div class="card-body">
+    <form method="POST" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label for="archivo" class="form-label">📂 Selecciona archivo CSV/Excel</label>
+        <input type="file" class="form-control" name="archivo" accept=".csv,.xlsx" required>
+        <div class="form-text">Descarga la <a href="{{ url_for('static', filename='plantillas/docentes_template.xlsx') }}">plantilla</a> para evitar errores.</div>
+      </div>
+      <button type="submit" class="btn btn-success">
+        <i class="bi bi-cloud-upload-fill me-1"></i> Procesar archivo
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card border-0 shadow-lg">
+  <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+    <div>
+      <h5 class="mb-0"><i class="bi bi-person-check-fill me-2"></i> Licencias activas</h5>
+      <small class="text-light">Listado de licencias aprobadas y vigentes al {{ hoy }}</small>
+    </div>
+    <a href="{{ url_for('licencias.nueva_licencia') }}" class="btn btn-light btn-sm">
+      <i class="bi bi-plus-circle me-1"></i> Nueva licencia
+    </a>
+  </div>
+
+  <div class="card-body">
+    <form method="POST" class="row g-3 mb-4">
+      <div class="col-md-4">
+        <label for="docente_id" class="form-label">Filtrar por docente</label>
+        <select class="form-select" name="docente_id">
+  <option value="">Todos</option>
+  {% for d in docentes %}
+    <option value="{{ d.id }}" {% if docente_id == d.id|string %}selected{% endif %}>{{ d.nombre }}</option>
+  {% endfor %}
+</select>
+      </div>
+      <div class="col-md-3">
+        <label for="desde" class="form-label">Desde</label>
+        <input type="date" name="desde" id="desde" class="form-control" value="{{ request.form.desde }}">
+      </div>
+      <div class="col-md-3">
+        <label for="hasta" class="form-label">Hasta</label>
+        <input type="date" name="hasta" id="hasta" class="form-control" value="{{ request.form.hasta }}">
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-outline-primary w-100">
+          <i class="bi bi-funnel me-1"></i> Filtrar
+        </button>
+      </div>
+    </form>
+
+    {% if licencias %}
+    <div class="table-responsive">
+      <table id="tablaLicencias" class="table table-hover table-bordered align-middle text-center">
+        <thead class="table-light">
+          <tr>
+            <th>Docente</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Motivo</th>
+            <th>Aprobado por</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in licencias %}
+          <tr class="{% if l.fecha_fin <= vencimiento_limite %}table-warning{% endif %}">
+            <td class="text-start">{{ l.docente.nombre }}</td>
+            <td>{{ l.fecha_inicio.strftime('%d/%m/%Y') }}</td>
+            <td>{{ l.fecha_fin.strftime('%d/%m/%Y') }}</td>
+            <td>{{ l.motivo }}</td>
+            <td>{{ l.aprobado_por or '—' }}</td>
+            <td>
+              <div class="btn-group" role="group">
+                <a href="{{ url_for('licencias.editar_licencia', id=l.id) }}" class="btn btn-sm btn-outline-secondary" title="Editar">
+                  <i class="bi bi-pencil-square"></i>
+                </a>
+                <form method="POST" action="{{ url_for('licencias.eliminar_licencia', id=l.id) }}" onsubmit="return confirm('¿Eliminar esta licencia?');" style="display:inline;">
+                  <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center">
+      <i class="bi bi-info-circle me-2"></i> No hay licencias activas en este momento.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- DataTables -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+
+<!-- Select2 -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+  $(document).ready(function () {
+    $('.select2').select2({
+      placeholder: "Buscar docente...",
+      allowClear: true,
+      minimumInputLength: 2,
+      ajax: {
+        url: "{{ url_for('docentes.buscar') }}",
+        dataType: 'json',
+        delay: 250,
+        data: function (params) {
+          return { q: params.term };
+        },
+        processResults: function (data) {
+          return {
+            results: data.map(function (d) {
+              return { id: d.id, text: d.text };
+            })
+          };
+        },
+        cache: true
+      },
+      width: '100%'
+    });
+  });
+</script>
+{% endblock %}

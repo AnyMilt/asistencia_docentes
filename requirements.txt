@@ -1,0 +1,31 @@
+# Flask y extensiones principales
+Flask==2.3.3
+Flask-SQLAlchemy==3.0.5
+Flask-Login==0.6.3
+
+# Base de datos y migraciones
+Flask-Migrate==4.0.5
+
+# Validación de datos
+marshmallow==3.20.1
+
+# Variables de entorno
+python-dotenv==1.0.0
+
+# Generación de códigos QR
+qrcode==7.4.2
+Pillow>=9.0.0
+
+# Generación de reportes PDF
+reportlab==4.0.4
+
+# Seguridad
+Werkzeug==2.3.7
+
+# Utilidades
+python-dateutil==2.8.2
+flask-wtf
+
+pandas==2.2.1
+
+openpyxl==3.1.3

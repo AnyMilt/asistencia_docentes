@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+          {% if docente %}✏️ Editar docente{% else %}👩‍🏫 Registro de nuevo docente{% endif %}
+        </h5>
+      </div>
+      <div class="card-body">
+        <form method="POST" class="row g-4">
+          <!-- Nombre -->
+          <div class="col-md-6">
+            <label for="nombre" class="form-label">📝 Nombre completo</label>
+            <input type="text" id="nombre" class="form-control" name="nombre"
+                   value="{{ docente.nombre if docente else '' }}" required>
+          </div>
+
+          <!-- Cédula -->
+          <div class="col-md-6">
+            <label for="cedula" class="form-label">🆔 Cédula</label>
+            <input type="text" id="cedula" class="form-control" name="cedula"
+                   value="{{ docente.cedula if docente else '' }}"
+                   pattern="[0-9]{10}" maxlength="10" required>
+            <div class="form-text">Debe contener 10 dígitos numéricos</div>
+          </div>
+
+          <!-- Teléfono -->
+          <div class="col-md-6">
+            <label for="telefono" class="form-label">📞 Teléfono</label>
+            <input type="tel" id="telefono" class="form-control" name="telefono"
+                   value="{{ docente.telefono if docente else '' }}"
+                   pattern="[0-9]{7,10}" required>
+            <div class="form-text">Entre 7 y 10 dígitos</div>
+          </div>
+
+          <!-- Correo electrónico -->
+          <div class="col-md-6">
+            <label for="correo" class="form-label">📧 Correo electrónico</label>
+            <input type="email" id="correo" class="form-control" name="correo"
+                   value="{{ docente.correo if docente else '' }}" required>
+          </div>
+
+          <!-- Jornada -->
+          <div class="col-md-6">
+            <label for="jornada" class="form-label">🕒 Jornada asignada</label>
+            <select class="form-select" id="jornada" name="jornada" required>
+              <option value="">Selecciona una opción...</option>
+              <option value="matutina" {% if docente and docente.jornada == 'matutina' %}selected{% endif %}>🌅 Matutina</option>
+              <option value="vespertina" {% if docente and docente.jornada == 'vespertina' %}selected{% endif %}>🌇 Vespertina</option>
+              <option value="doble" {% if docente and docente.jornada == 'doble' %}selected{% endif %}>🌅🌇 Doble jornada</option>
+            </select>
+          </div>
+
+          <!-- Tipo de personal -->
+          <div class="col-md-6">
+            <label for="tipo" class="form-label">👥 Tipo de personal</label>
+            <select class="form-select" id="tipo" name="tipo" required>
+              <option value="">Selecciona una opción...</option>
+              <option value="DOCENTE" {% if docente and docente.tipo == 'DOCENTE' %}selected{% endif %}>🧑‍🏫 Docente</option>
+              <option value="ADMINISTRATIVO" {% if docente and docente.tipo == 'ADMINISTRATIVO' %}selected{% endif %}>🧑‍💼 Administrativo</option>
+              <option value="CONSERJE" {% if docente and docente.tipo == 'CONSERJE' %}selected{% endif %}>🧹 Conserje</option>
+              <option value="DECE" {% if docente and docente.tipo == 'DECE' %}selected{% endif %}>🧠 DECE</option>
+            </select>
+          </div>
+
+          <!-- Botón -->
+          <div class="col-12 text-end">
+            <button type="submit" class="btn btn-success px-4">
+              {% if docente %}💾 Guardar cambios{% else %}✅ Registrar docente{% endif %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

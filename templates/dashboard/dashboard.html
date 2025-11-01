@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Encabezado institucional -->
+  <div class="bg-primary text-white rounded px-4 py-3 mb-4 shadow-sm d-flex justify-content-between align-items-center">
+    <h4 class="mb-0"><i class="bi bi-person-badge-fill me-2"></i> Panel de Talento Humano</h4>
+    <span class="badge bg-light text-primary">Actualizado: {{ hoy.strftime('%d/%m/%Y') }}</span>
+  </div>
+
+  <!-- Tarjetas resumen -->
+  {% set card_styles = [
+    ('bi-people-fill', 'primary'),
+    ('bi-file-earmark-medical', 'warning'),
+    ('bi-check2-square', 'success'),
+    ('bi-exclamation-triangle', 'danger')
+  ] %}
+  <div class="row g-3 mb-4">
+    {% for label, value in metric_cards %}
+      {% set icon, color = card_styles[loop.index0] %}
+      <div class="col-md-3">
+        <div class="card text-center border-{{ color }} shadow-sm">
+          <div class="card-body">
+            <div class="mb-2 text-{{ color }}">
+              <i class="bi {{ icon }} fs-3"></i>
+            </div>
+            <h6 class="text-muted">{{ label }}</h6>
+            <h3 class="text-{{ color }}">{{ value }}</h3>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Docentes registrados por jornada -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light">
+      <strong><i class="bi bi-people-fill me-2 text-primary"></i> Docentes registrados por jornada</strong>
+    </div>
+    <div class="card-body">
+      <ul class="list-group list-group-flush">
+        {% for jornada, cantidad in docentes_por_jornada %}
+          <li class="list-group-item d-flex justify-content-between">
+            <span>{{ jornada }}</span>
+            <span class="badge bg-primary rounded-pill">{{ cantidad }}</span>
+          </li>
+        {% endfor %}
+        <li class="list-group-item d-flex justify-content-between fw-bold">
+          <span>Total global</span>
+          <span class="badge bg-dark rounded-pill">{{ total_docentes }}</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Rankings institucionales -->
+  <div class="row g-3">
+    <!-- Docentes con más faltas -->
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light"><strong><i class="bi bi-person-x-fill me-2 text-danger"></i> Docentes con más faltas</strong></div>
+        <div class="card-body">
+          {% if ranking_faltas %}
+            <ul class="list-group list-group-flush">
+              {% for nombre, cantidad in ranking_faltas %}
+                <li class="list-group-item d-flex justify-content-between">
+                  <span>{{ nombre }}</span>
+                  <span class="badge bg-danger rounded-pill">{{ cantidad }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="text-muted text-center py-3">
+              <i class="bi bi-info-circle me-2"></i> No hay datos de faltas recientes.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Docentes con más tardanzas -->
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light"><strong><i class="bi bi-clock-fill me-2 text-warning"></i> Docentes con más tardanzas</strong></div>
+        <div class="card-body">
+          {% if ranking_tardanzas %}
+            <ul class="list-group list-group-flush">
+              {% for nombre, cantidad in ranking_tardanzas %}
+                <li class="list-group-item d-flex justify-content-between">
+                  <span>{{ nombre }}</span>
+                  <span class="badge bg-warning rounded-pill">{{ cantidad }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="text-muted text-center py-3">
+              <i class="bi bi-info-circle me-2"></i> No hay registros de tardanzas.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Docentes con más licencias -->
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light"><strong><i class="bi bi-file-earmark-text-fill me-2 text-primary"></i> Docentes con más licencias</strong></div>
+        <div class="card-body">
+          {% if ranking %}
+            <ul class="list-group list-group-flush">
+              {% for nombre, cantidad in ranking %}
+                <li class="list-group-item d-flex justify-content-between">
+                  <span>{{ nombre }}</span>
+                  <span class="badge bg-primary rounded-pill">{{ cantidad }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="text-muted text-center py-3">
+              <i class="bi bi-info-circle me-2"></i> No hay registros de licencias.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

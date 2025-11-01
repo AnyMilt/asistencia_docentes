@@ -1,0 +1,334 @@
+from flask import Blueprint, render_template, send_file,request, flash, redirect, url_for, jsonify
+from models.docente import Docente
+from datetime import datetime, time
+import qrcode
+import os
+from app_simple import db
+from models.asistencia import Asistencia
+from io import BytesIO
+from utils import get_local_ip, slugify
+from app import socketio  
+import json
+from urllib.parse import urlparse, parse_qs
+
+asistencia_bp = Blueprint('asistencia', __name__, template_folder='templates/asistencia')
+
+def jornada_actual():
+    hora = datetime.now().hour
+    return 'matutina' if hora < 13 else 'vespertina'
+
+def jornada_por_hora(hora):
+    if time(7, 0) <= hora < time(13, 0):
+        return 'matutina'
+    elif time(13, 0) <= hora < time(18, 0):
+        return 'vespertina'
+    else:
+        return 'fuera de jornada'
+
+def obtener_jornada_valida(docente, hora):
+    """
+    Determina la jornada válida para el registro según la hora y la configuración del docente
+    Returns:
+        tuple: (es_valido, jornada, mensaje)
+    """
+    jornada_hora = jornada_por_hora(hora)
+    
+    # Si es doble jornada, la jornada se determina por la hora
+    if docente.jornada == 'doble':
+        if jornada_hora == 'fuera de jornada':
+            return False, None, "Hora fuera del horario de trabajo"
+        return True, jornada_hora, "Jornada válida"
+    
+    # Para jornada única, debe coincidir con la jornada del docente
+    if docente.jornada != jornada_hora:
+        return False, None, f"El docente solo está asignado a jornada {docente.jornada}"
+    
+    return True, jornada_hora, "Jornada válida"
+
+def validar_horario_registro(hora, jornada):
+    """
+    Valida si el horario es válido para una jornada específica
+    Returns:
+        tuple: (es_valido, mensaje)
+    """
+    HORARIOS = {
+        'matutina': {
+            'entrada': (time(7, 0), time(8, 30)),    # 7:00 a 8:30
+            'salida': (time(12, 30), time(13, 30))   # 12:30 a 13:30
+        },
+        'vespertina': {
+            'entrada': (time(13, 0), time(14, 30)),  # 13:00 a 14:30
+            'salida': (time(17, 30), time(18, 30))   # 17:30 a 18:30
+        }
+    }
+    
+    if jornada not in HORARIOS:
+        return False, "Jornada no válida"
+        
+    horarios = HORARIOS[jornada]
+    
+    # Verificar horario de entrada
+    if time(7, 0) <= hora <= time(14, 30):
+        hora_min, hora_max = horarios['entrada']
+        if not (hora_min <= hora <= hora_max):
+            return False, f"Entrada fuera de horario permitido ({hora_min.strftime('%H:%M')} - {hora_max.strftime('%H:%M')})"
+            
+    # Verificar horario de salida
+    elif time(12, 30) <= hora <= time(18, 30):
+        hora_min, hora_max = horarios['salida']
+        if not (hora_min <= hora <= hora_max):
+            return False, f"Salida fuera de horario permitido ({hora_min.strftime('%H:%M')} - {hora_max.strftime('%H:%M')})"
+    
+    return True, "Horario válido"
+
+@asistencia_bp.route('/')
+def index():
+    return render_template('base.html', mensaje="Registro de asistencia")
+
+@asistencia_bp.route('/generar_qr/<int:id>')
+def generar_qr(id):
+    docente = Docente.query.get_or_404(id)
+    base_url = f"http://{get_local_ip()}:5000/asistencia/registrar"
+    qr_data = f"{base_url}?docente={docente.id}"
+
+    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+    return send_file(buffer, mimetype='image/png')
+
+def mostrar_mensaje(tipo, nombre, hora, fecha, jornada):
+    colores = {
+        "entrada": "#e0f7fa",
+        "salida": "#e8f5e9",
+        "completo": "#fff3e0"
+    }
+    emojis = {
+        "entrada": "✅",
+        "salida": "✅",
+        "completo": "⚠️"
+    }
+    fondo = colores[tipo]
+    emoji = emojis[tipo]
+    hora_html = f"<p>🕒 {hora.strftime('%H:%M:%S')}</p>" if hora else ""
+    jornada_html = f"<p>🕓 Jornada detectada: <strong>{jornada}</strong></p>"
+
+    return f"""
+    <html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body {{
+                font-family: 'Segoe UI', sans-serif;
+                background-color: {fondo};
+                color: #333;
+                text-align: center;
+                padding: 2em;
+            }}
+            .card {{
+                background: white;
+                border-radius: 12px;
+                padding: 1.5em;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+                max-width: 400px;
+                margin: auto;
+            }}
+            h1 {{
+                font-size: 1.8em;
+                margin-bottom: 0.5em;
+            }}
+            p {{
+                font-size: 1.2em;
+                margin: 0.5em 0;
+            }}
+            .emoji {{
+                font-size: 2em;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <div class="emoji">{emoji}</div>
+            <h1>{tipo.capitalize()} registrada</h1>
+            <p><strong>{nombre}</strong></p>
+            {hora_html}
+            <p>📅 {fecha.strftime('%d/%m/%Y')}</p>
+            {jornada_html}
+        </div>
+    </body>
+    </html>
+    """
+
+@asistencia_bp.route('/registrar')
+def registrar_asistencia_en_pausa():
+    docente_id = request.args.get('docente')
+    fecha_str = request.args.get('fecha')
+    hora_str = request.args.get('hora')
+
+    try:
+        fecha = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+        hora = datetime.strptime(hora_str, "%H:%M:%S").time()
+    except (TypeError, ValueError):
+        return "❌ Fecha u hora inválida", 400
+
+    docente = Docente.query.get_or_404(docente_id)
+    
+    # Validar jornada y horario
+    es_valido_jornada, jornada_detectada, mensaje_jornada = obtener_jornada_valida(docente, hora)
+    if not es_valido_jornada:
+        return f"❌ Error: {mensaje_jornada}", 400
+        
+    es_valido_horario, mensaje_horario = validar_horario_registro(hora, jornada_detectada)
+    if not es_valido_horario:
+        return f"❌ Error: {mensaje_horario}", 400
+
+    # Buscar asistencia para la jornada específica
+    asistencia = Asistencia.query.filter_by(
+        docente_id=docente.id,
+        fecha=fecha,
+        jornada=jornada_detectada
+    ).first()
+
+    fecha_display = fecha.strftime('%d/%m/%Y')
+    fila_id = f"{slugify(docente.nombre)}-{jornada_detectada}-{fecha.strftime('%Y-%m-%d')}"
+
+    if not asistencia:
+        try:
+            nueva = Asistencia(
+                docente_id=docente.id,
+                fecha=fecha,
+                hora_entrada=hora,
+                jornada=jornada_detectada,
+                estado='presente'
+            )
+            db.session.add(nueva)
+            db.session.commit()
+
+            # emitir nuevo registro con fila_id (slug + fecha ISO) y fecha para mostrar
+            socketio.emit('nuevo_registro', {
+                'nombre': docente.nombre,
+                'fecha': fecha_display,
+                'fila_id': fila_id,
+                'hora_entrada': hora.strftime('%H:%M') if hora else None,
+                'hora_salida': None,
+                'jornada': jornada_detectada
+            })
+
+            return mostrar_mensaje("entrada", docente.nombre, nueva.hora_entrada, fecha, jornada_detectada)
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error al guardar asistencia: {str(e)}")
+            return f"❌ Error al guardar asistencia: {str(e)}", 500    elif not asistencia.hora_salida:
+        asistencia.hora_salida = hora
+        db.session.commit()
+
+        # actualizar valores de visualización y fila id
+        socketio.emit('nuevo_registro', {
+            'nombre': docente.nombre,
+            'fecha': fecha_display,
+            'fila_id': fila_id,
+            'hora_entrada': asistencia.hora_entrada.strftime('%H:%M') if asistencia.hora_entrada else None,
+            'hora_salida': asistencia.hora_salida.strftime('%H:%M') if asistencia.hora_salida else None,
+            'jornada': jornada_detectada
+        })
+
+        return mostrar_mensaje("salida", docente.nombre, asistencia.hora_salida, fecha, jornada_detectada)
+
+    else:
+        return mostrar_mensaje("completo", docente.nombre, None, fecha, jornada_detectada)
+
+@asistencia_bp.route('/asistencia/reportes')
+def reportes():
+    return render_template('asistencia/asistencia_reportes.html')
+
+@asistencia_bp.route('/importar_json', methods=['POST'])
+def importar_json():
+    archivo = request.files.get('archivo_json')
+    if not archivo or not archivo.filename.endswith('.json'):
+        flash('Archivo inválido. Debe ser un archivo .json.', 'danger')
+        return redirect(url_for('asistencia.index'))
+
+    try:
+        contenido = json.load(archivo)
+        registros_importados = 0
+
+        for item in contenido:
+            if 'UrlEscaneo' not in item:
+                continue
+
+            try:
+                # Extraer parámetros desde la URL
+                partes = urlparse(item['UrlEscaneo'])
+                qs = parse_qs(partes.query)
+                docente_id = int(qs.get('docente', [0])[0])
+                fecha_str = qs.get('fecha', [''])[0]
+                hora_str = qs.get('hora', [''])[0]
+
+                docente = Docente.query.get(docente_id)
+                if not docente:
+                    continue
+
+                fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+                hora = datetime.strptime(hora_str, '%H:%M:%S').time()
+
+                # Validar jornada y horario
+                es_valido_jornada, jornada_detectada, mensaje_jornada = obtener_jornada_valida(docente, hora)
+                if not es_valido_jornada:
+                    continue
+                    
+                es_valido_horario, mensaje_horario = validar_horario_registro(hora, jornada_detectada)
+                if not es_valido_horario:
+                    continue
+
+                # Buscar o crear registro
+                registro = Asistencia.query.filter_by(
+                    docente_id=docente.id, 
+                    fecha=fecha,
+                    jornada=jornada_detectada
+                ).first()
+
+                if not registro:
+                    registro = Asistencia(
+                        docente_id=docente.id, 
+                        fecha=fecha,
+                        jornada=jornada_detectada
+                    )
+                    registro.hora_entrada = hora
+                elif not registro.hora_entrada:
+                    registro.hora_entrada = hora
+                elif not registro.hora_salida:
+                    registro.hora_salida = hora
+                else:
+                    continue  # Ya tiene entrada y salida
+
+                db.session.add(registro)
+
+                # Emitir al frontend
+                socketio.emit('nuevo_registro', {
+                    'nombre': docente.nombre,
+                    'fecha': fecha.strftime('%d/%m/%Y'),
+                    'fila_id': f"{slugify(docente.nombre)}-{jornada_detectada}-{fecha.strftime('%Y-%m-%d')}",
+                    'hora_entrada': registro.hora_entrada.strftime('%H:%M') if registro.hora_entrada else None,
+                    'hora_salida': registro.hora_salida.strftime('%H:%M') if registro.hora_salida else None,
+                    'jornada': jornada_detectada
+                })
+
+                registros_importados += 1
+
+            except Exception as e:
+                print(f'Error en registro: {e}')
+                continue
+
+        db.session.commit()
+        flash(f'{registros_importados} registros importados correctamente.', 'success')
+
+    except Exception as e:
+        flash(f'Error al procesar el archivo: {str(e)}', 'danger')
+
+    return redirect(url_for('asistencia.index'))

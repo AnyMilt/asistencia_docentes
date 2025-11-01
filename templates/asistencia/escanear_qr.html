@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card shadow-sm">
+  <div class="card-header bg-primary text-white">
+    <h5 class="mb-0"><i class="bi bi-qr-code-scan me-2"></i> Escaneo automático de asistencia</h5>
+  </div>
+  <div class="card-body">
+    <div id="qr-reader" style="width:100%;"></div>
+    <div id="mensaje" class="mt-3"></div>
+    <form id="registro-form" method="POST" action="{{ url_for('asistencia.escanear_qr') }}" style="display:none;">
+      <input type="hidden" name="codigo" id="codigo-qr">
+    </form>
+  </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+  const qrReader = new Html5Qrcode("qr-reader");
+  qrReader.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    (decodedText) => {
+      document.getElementById("codigo-qr").value = decodedText;
+      document.getElementById("mensaje").innerHTML = `<div class="alert alert-info">📤 Enviando asistencia...</div>`;
+      document.getElementById("registro-form").submit();
+      qrReader.stop(); // detener escaneo tras lectura
+    },
+    (errorMessage) => {}
+  );
+</script>
+{% endblock %}
