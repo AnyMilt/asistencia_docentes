@@ -488,13 +488,27 @@ def calcular_incidencias(jornada: str, hora_entrada: time, hora_salida: time):
 
     return atraso, salida_temprana
 
-@asistencia_bp.route('/registrar', methods=['POST'])
+@asistencia_bp.route('/registrar', methods=['GET', 'POST'])
 def registrar_asistencia_post():
     try:
-        data = request.get_json()
+        # 📦 Compatibilidad con GET y POST
+        if request.method == 'POST':
+            data = request.get_json()
+        else:
+            data = {
+                "idDocente": request.args.get("docente"),
+                "idDispositivo": request.args.get("device_id"),
+                "lat": request.args.get("latitud"),
+                "lng": request.args.get("longitud"),
+                "tipo": request.args.get("tipo", "Entrada"),
+                "fecha": request.args.get("fecha")
+            }
 
-        if not data:
-            return "❌ No se recibió JSON válido", 400
+        if not data or not data.get("idDocente") or not data.get("fecha"):
+            return jsonify({
+                "status": "error",
+                "mensaje": "❌ Faltan parámetros obligatorios (idDocente, fecha)"
+            }), 400
 
         docente_id = data.get('idDocente')
         device_id = data.get('idDispositivo')
@@ -503,19 +517,19 @@ def registrar_asistencia_post():
         tipo = data.get('tipo', 'Entrada')
         fecha_hora_str = data.get('fecha')
 
-        if not all([docente_id, fecha_hora_str]):
-            return "❌ Faltan parámetros obligatorios (idDocente, fecha)", 400
-
         docente = Docente.query.get(int(docente_id))
         if not docente:
-            return "❌ Docente no encontrado", 404
+            return jsonify({
+                "status": "error",
+                "mensaje": "❌ Docente no encontrado"
+            }), 404
 
-        # Parsear fecha y hora
+        # 🕒 Parsear fecha y hora
         fecha_hora = datetime.strptime(fecha_hora_str, "%Y-%m-%d %H:%M:%S")
         fecha = fecha_hora.date()
         hora = fecha_hora.time()
 
-        # Detectar jornada
+        # 🕘 Detectar jornada según hora
         if time(6, 0) <= hora <= time(12, 59):
             jornada_detectada = "matutina"
         elif time(13, 0) <= hora <= time(19, 59):
@@ -529,8 +543,15 @@ def registrar_asistencia_post():
             jornada=jornada_detectada
         ).first()
 
-        if tipo.lower() == "entrada" or not asistencia:
-            # Registrar entrada
+        # 🟢 Registro de ENTRADA
+        if tipo.lower() == "entrada":
+            if asistencia and asistencia.hora_entrada is not None:
+                return jsonify({
+                    "status": "warning",
+                    "mensaje": f"⚠️ {docente.nombre} ya registró su ENTRADA a las {asistencia.hora_entrada.strftime('%H:%M:%S')}",
+                    "jornada": jornada_detectada
+                }), 200
+
             if not asistencia:
                 asistencia = Asistencia(
                     docente_id=docente.id,
@@ -553,19 +574,37 @@ def registrar_asistencia_post():
                 "jornada": jornada_detectada
             }), 200
 
+        # 🔵 Registro de SALIDA
         elif tipo.lower() == "salida":
-            # Actualizar salida
+            if not asistencia:
+                return jsonify({
+                    "status": "warning",
+                    "mensaje": f"⚠️ {docente.nombre} no tiene una ENTRADA registrada hoy ({jornada_detectada}).",
+                    "jornada": jornada_detectada
+                }), 200
+
+            if asistencia.hora_salida is not None:
+                return jsonify({
+                    "status": "warning",
+                    "mensaje": f"⚠️ {docente.nombre} ya registró su SALIDA a las {asistencia.hora_salida.strftime('%H:%M:%S')}",
+                    "jornada": jornada_detectada
+                }), 200
+
             asistencia.hora_salida = hora
             asistencia.device_id = device_id or asistencia.device_id
             asistencia.latitud = float(latitud) if latitud else asistencia.latitud
             asistencia.longitud = float(longitud) if longitud else asistencia.longitud
             asistencia.fecha_actualizacion = datetime.now()
 
-            atraso, salida_temprana = calcular_incidencias(
-                jornada_detectada,
-                asistencia.hora_entrada,
-                asistencia.hora_salida
-            )
+            # 🔍 Calcular incidencias si existe función
+            try:
+                atraso, salida_temprana = calcular_incidencias(
+                    jornada_detectada,
+                    asistencia.hora_entrada,
+                    asistencia.hora_salida
+                )
+            except Exception:
+                atraso, salida_temprana = (0, 0)
 
             db.session.commit()
             return jsonify({
@@ -576,12 +615,18 @@ def registrar_asistencia_post():
                 "salida_temprana": salida_temprana
             }), 200
 
+        # 🚫 Tipo desconocido
         else:
-            return "⚠️ Tipo de registro desconocido (Entrada/Salida)", 400
+            return jsonify({
+                "status": "error",
+                "mensaje": "⚠️ Tipo de registro desconocido (Entrada/Salida)"
+            }), 400
 
     except Exception as e:
-        return jsonify({"status": "error", "mensaje": str(e)}), 500
-
+        return jsonify({
+            "status": "error",
+            "mensaje": str(e)
+        }), 500
 
 
 ##final de la nueva función registrar_asistencia##
