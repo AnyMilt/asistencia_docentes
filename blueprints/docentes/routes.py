@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required
 from app_simple import db
 from models.docente import Docente
+from models.asistencia import Asistencia
 
 docentes_bp = Blueprint('docentes', __name__, template_folder='templates/docentes')
 
@@ -255,3 +256,37 @@ def carga_masiva():
         return redirect(url_for("docentes.index"))
 
     return render_template("docentes/carga_masiva.html")
+
+@docentes_bp.route('/api/lista', methods=['GET'])
+def api_lista_docentes():
+    from datetime import date
+
+    docentes = Docente.query.filter_by(activo=True).order_by(Docente.nombre).all()
+    resultado = []
+
+    for d in docentes:
+        # 🕐 Buscar asistencia del día actual
+        asistencia_hoy = Asistencia.query.filter_by(docente_id=d.id, fecha=date.today()).first()
+
+        # Si no tiene asistencia hoy → mostrar como "Entrada"
+        if not asistencia_hoy:
+            tipo_asistencia_actual = "Entrada"
+
+        # Si tiene entrada pero no salida → mostrar "Salida"
+        elif asistencia_hoy.hora_entrada and not asistencia_hoy.hora_salida:
+            tipo_asistencia_actual = "Salida"
+
+        # Si tiene ambas → ya completó asistencia → no se muestra
+        else:
+            continue  # ❌ se salta este docente
+
+        resultado.append({
+            'id': d.id,
+            'cedula': d.cedula,
+            'nombre': d.nombre,
+            'jornada': d.jornada,
+            'tipo': d.tipo,
+            'tipo_asistencia': tipo_asistencia_actual
+        })
+
+    return jsonify(resultado)

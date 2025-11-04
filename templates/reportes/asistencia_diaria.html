@@ -5,24 +5,34 @@
 <div class="card shadow-sm border-info">
   <div class="card-header bg-gradient bg-info text-white d-flex justify-content-between align-items-center">
     <h5 class="mb-0"><i class="bi bi-calendar-check-fill me-2"></i> Asistencia diaria</h5>
-    <span class="badge bg-light text-dark px-3 py-2">Panel actualizado cada 30 segundos</span>
+    <div class="d-flex align-items-center">
+      <span id="estado-actualizacion" class="badge bg-light text-dark px-3 py-2 me-2">Panel actualizado cada 30 segundos</span>
+      <span id="contador" class="badge bg-secondary">30s</span>
+    </div>
   </div>
+
   <div class="card-body">
 
     <!-- Filtro -->
-    <form method="get" class="row g-3 mb-4">
+    <form method="get" class="row g-3 mb-4" id="form-filtro">
       <div class="col-md-4">
         <label for="fecha" class="form-label"><i class="bi bi-calendar-date me-1"></i> Fecha</label>
         <input type="date" class="form-control border-info" id="fecha" name="fecha" value="{{ fecha }}">
       </div>
       <div class="col-md-4">
         <label for="docente" class="form-label"><i class="bi bi-person-badge me-1"></i> Docente</label>
-        <input type="text" class="form-control border-info" id="docente" name="docente" placeholder="Nombre o cédula">
+        <input type="text" class="form-control border-info" id="docente" name="docente"
+               placeholder="Nombre o cédula" value="{{ request.args.get('docente', '') }}">
       </div>
-      <div class="col-md-4 d-flex align-items-end">
+      <div class="col-md-2 d-flex align-items-end">
         <button type="submit" class="btn btn-info w-100 shadow-sm">
           <i class="bi bi-search me-1"></i> Buscar
         </button>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <a href="{{ url_for('asistencia.index') }}" class="btn btn-outline-secondary w-100 shadow-sm">
+          <i class="bi bi-x-circle me-1"></i> Limpiar
+        </a>
       </div>
     </form>
 
@@ -30,11 +40,12 @@
     <div class="p-3 mb-4 bg-light border rounded">
       <h6 class="mb-3"><i class="bi bi-upload me-2"></i>Importar asistencia desde archivo JSON</h6>
       <form action="{{ url_for('asistencia.importar_json') }}" method="POST" enctype="multipart/form-data" class="row g-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="col-md-8">
           <input type="file" name="archivo_json" accept=".json" class="form-control border-success" required>
         </div>
         <div class="col-md-4 d-grid">
-          <button type="submit" class="btn btn-success shadow-sm">
+          <button type="submit" class="btn btn-success shadow-sm" onclick="this.disabled=true; this.innerHTML='Subiendo...'; this.form.submit();">
             <i class="bi bi-cloud-upload-fill me-1"></i> Subir y registrar
           </button>
         </div>
@@ -43,7 +54,7 @@
 
     <!-- Tabla -->
     <div class="table-responsive">
-      <table class="table table-bordered table-hover align-middle table-striped">
+      <table class="table table-bordered table-hover align-middle table-striped" id="tabla-asistencia">
         <thead class="table-info text-center">
           <tr>
             <th><i class="bi bi-person-fill"></i> Docente</th>
@@ -53,7 +64,7 @@
             <th><i class="bi bi-clock-history"></i> Jornada</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="tbody-asistencia">
           {% for r in resultados %}
             <tr id="{{ r.fila_id }}" class="text-center">
               <td>{{ r.docente.nombre }}</td>
@@ -69,30 +80,66 @@
       </table>
     </div>
 
-    <!-- Script para recargar automáticamente cada 30 segundos -->
+    <!-- Script para actualización automática con contador y notificación -->
     <script>
-      // Función para recargar solo si no hay formularios con cambios pendientes
-      function recargarSiSeguro() {
-        const forms = document.querySelectorAll('form');
+      let segundos = 30;
+      const contador = document.getElementById("contador");
+      const estado = document.getElementById("estado-actualizacion");
+      const formFiltro = document.getElementById("form-filtro");
+
+      function actualizarContador() {
+        contador.textContent = segundos + "s";
+        segundos--;
+        if (segundos < 0) {
+          segundos = 30;
+          recargarTablaSiSeguro();
+        }
+      }
+
+      async function recargarTablaSiSeguro() {
+        // Verificar si el usuario cambió algo en los formularios
         let formChanged = false;
-        
+        const forms = document.querySelectorAll('form');
         forms.forEach(form => {
-          const elements = form.elements;
-          for (let i = 0; i < elements.length; i++) {
-            if (elements[i].value !== elements[i].defaultValue) {
+          for (const el of form.elements) {
+            if (el.value !== el.defaultValue) {
               formChanged = true;
               break;
             }
           }
         });
+        if (formChanged) return;
 
-        if (!formChanged) {
-          window.location.reload();
+        estado.textContent = "Actualizando...";
+        estado.className = "badge bg-warning text-dark px-3 py-2";
+
+        try {
+          const response = await fetch(window.location.href);
+          const html = await response.text();
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, "text/html");
+          const nuevoTbody = doc.querySelector("#tbody-asistencia");
+
+          if (nuevoTbody) {
+            document.querySelector("#tbody-asistencia").innerHTML = nuevoTbody.innerHTML;
+            estado.textContent = "Actualizado correctamente";
+            estado.className = "badge bg-success text-white px-3 py-2";
+          } else {
+            estado.textContent = "Error al actualizar tabla";
+            estado.className = "badge bg-danger text-white px-3 py-2";
+          }
+        } catch (error) {
+          estado.textContent = "Error de conexión";
+          estado.className = "badge bg-danger text-white px-3 py-2";
         }
+
+        setTimeout(() => {
+          estado.textContent = "Panel actualizado cada 30 segundos";
+          estado.className = "badge bg-light text-dark px-3 py-2";
+        }, 4000);
       }
 
-      // Recargar cada 30 segundos si no hay cambios pendientes
-      setInterval(recargarSiSeguro, 30000);
+      setInterval(actualizarContador, 1000);
     </script>
 
   </div>

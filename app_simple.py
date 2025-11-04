@@ -3,9 +3,12 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from config import Config
 from error_handlers import setup_logging, register_error_handlers
+from flask_wtf.csrf import CSRFProtect
 
 db = SQLAlchemy()
 login_manager = LoginManager()
+
+csrf = CSRFProtect()
 
 def create_app():
     app = Flask(__name__, template_folder='templates')
@@ -17,7 +20,9 @@ def create_app():
     # Inicializar extensiones
     db.init_app(app)
     login_manager.init_app(app)
-    
+    csrf.init_app(app)  # ✅ Activar CSRF protection
+
+
     # Configurar Flask-Login
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Por favor inicia sesión para acceder a esta página.'
