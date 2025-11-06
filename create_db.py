@@ -64,6 +64,7 @@ class Asistencia(db.Model):
     longitud = db.Column(db.Float, nullable=True)
     fecha_creacion = db.Column(db.DateTime, default=db.func.current_timestamp())
     fecha_actualizacion = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+    modo = db.Column(db.String(20), default="presencial", nullable=False, index=True)
 
 class Licencia(db.Model):
     __tablename__ = 'licencias'

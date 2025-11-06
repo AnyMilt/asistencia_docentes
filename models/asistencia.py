@@ -25,6 +25,9 @@ class Asistencia(db.Model):
     latitud = db.Column(db.Float, nullable=True)
     longitud = db.Column(db.Float, nullable=True)
 
+    # 🆕 Nuevo campo: modo (presencial o virtual)
+    modo = db.Column(db.String(20), default="presencial", nullable=False, index=True)
+
     fecha_creacion = db.Column(db.DateTime, default=db.func.current_timestamp())
     fecha_actualizacion = db.Column(
         db.DateTime,
@@ -41,7 +44,7 @@ class Asistencia(db.Model):
     )
 
     def __repr__(self):
-        return f'<Asistencia Docente={self.docente_id} Fecha={self.fecha} Jornada={self.jornada}>'
+        return f'<Asistencia Docente={self.docente_id} Fecha={self.fecha} Jornada={self.jornada} Modo={self.modo}>'
 
     def to_dict(self):
         return {
@@ -54,25 +57,6 @@ class Asistencia(db.Model):
             'jornada': self.jornada,
             'device_id': self.device_id,
             'latitud': self.latitud,
-            'longitud': self.longitud
+            'longitud': self.longitud,
+            'modo': self.modo,  # <- nuevo campo
         }
-
-    @property
-    def tiempo_trabajado(self):
-        if self.hora_entrada and self.hora_salida:
-            entrada = datetime.combine(self.fecha, self.hora_entrada)
-            salida = datetime.combine(self.fecha, self.hora_salida)
-            if salida < entrada:
-                salida += timedelta(days=1)
-            return (salida - entrada).total_seconds() / 3600
-        return 0
-
-    @property
-    def es_tardanza(self):
-        if not self.hora_entrada or not self.docente:
-            return False
-        if self.docente.jornada == 'matutina':
-            return self.hora_entrada > time(7, 0, 0)
-        elif self.docente.jornada == 'vespertina':
-            return self.hora_entrada > time(13, 0, 0)
-        return False

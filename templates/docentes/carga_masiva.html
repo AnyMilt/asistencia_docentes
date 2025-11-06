@@ -6,11 +6,18 @@
   </div>
   <div class="card-body">
     <form method="POST" enctype="multipart/form-data">
+      <!-- ✅ Token CSRF obligatorio -->
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
       <div class="mb-3">
         <label for="archivo" class="form-label">📂 Selecciona archivo CSV/Excel</label>
         <input type="file" class="form-control" name="archivo" accept=".csv,.xlsx" required>
-        <div class="form-text">Descarga la <a href="{{ url_for('static', filename='plantillas/docentes_template.xlsx') }}">plantilla</a> para evitar errores.</div>
+        <div class="form-text">
+          Descarga la <a href="{{ url_for('static', filename='plantillas/docentes_template.xlsx') }}">plantilla</a>
+          para evitar errores.
+        </div>
       </div>
+
       <button type="submit" class="btn btn-success">
         <i class="bi bi-cloud-upload-fill me-1"></i> Procesar archivo
       </button>

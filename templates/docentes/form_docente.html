@@ -11,6 +11,9 @@
       </div>
       <div class="card-body">
         <form method="POST" class="row g-4">
+          <!-- ✅ Token CSRF obligatorio -->
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
           <!-- Nombre -->
           <div class="col-md-6">
             <label for="nombre" class="form-label">📝 Nombre completo</label>

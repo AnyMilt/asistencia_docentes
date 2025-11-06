@@ -501,9 +501,11 @@ def registrar_asistencia_post():
                 "lat": request.args.get("latitud"),
                 "lng": request.args.get("longitud"),
                 "tipo": request.args.get("tipo", "Entrada"),
-                "fecha": request.args.get("fecha")
+                "fecha": request.args.get("fecha"),
+                "modo": request.args.get("modo", "presencial")  # 👈 nuevo campo
             }
 
+        # 🧩 Validar datos obligatorios
         if not data or not data.get("idDocente") or not data.get("fecha"):
             return jsonify({
                 "status": "error",
@@ -515,6 +517,7 @@ def registrar_asistencia_post():
         latitud = data.get('lat')
         longitud = data.get('lng')
         tipo = data.get('tipo', 'Entrada')
+        modo = data.get('modo', 'presencial')  # 👈 nuevo parámetro
         fecha_hora_str = data.get('fecha')
 
         docente = Docente.query.get(int(docente_id))
@@ -556,7 +559,8 @@ def registrar_asistencia_post():
                 asistencia = Asistencia(
                     docente_id=docente.id,
                     fecha=fecha,
-                    jornada=jornada_detectada
+                    jornada=jornada_detectada,
+                    modo=modo  # 👈 nuevo campo
                 )
                 db.session.add(asistencia)
 
@@ -564,6 +568,7 @@ def registrar_asistencia_post():
             asistencia.device_id = device_id
             asistencia.latitud = float(latitud) if latitud else None
             asistencia.longitud = float(longitud) if longitud else None
+            asistencia.modo = modo or asistencia.modo  # 👈 actualización segura
             asistencia.fecha_creacion = datetime.now()
             asistencia.fecha_actualizacion = datetime.now()
 
@@ -571,7 +576,8 @@ def registrar_asistencia_post():
             return jsonify({
                 "status": "ok",
                 "mensaje": f"✅ Entrada registrada para {docente.nombre}",
-                "jornada": jornada_detectada
+                "jornada": jornada_detectada,
+                "modo": modo
             }), 200
 
         # 🔵 Registro de SALIDA
@@ -594,6 +600,7 @@ def registrar_asistencia_post():
             asistencia.device_id = device_id or asistencia.device_id
             asistencia.latitud = float(latitud) if latitud else asistencia.latitud
             asistencia.longitud = float(longitud) if longitud else asistencia.longitud
+            asistencia.modo = modo or asistencia.modo  # 👈 mantiene o actualiza modo
             asistencia.fecha_actualizacion = datetime.now()
 
             # 🔍 Calcular incidencias si existe función
@@ -611,6 +618,7 @@ def registrar_asistencia_post():
                 "status": "ok",
                 "mensaje": f"✅ Salida registrada para {docente.nombre}",
                 "jornada": jornada_detectada,
+                "modo": modo,
                 "atraso": atraso,
                 "salida_temprana": salida_temprana
             }), 200

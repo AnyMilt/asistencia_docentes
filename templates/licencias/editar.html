@@ -15,38 +15,46 @@
 
   <div class="card-body">
     <div class="alert alert-secondary mb-4">
-  <h6 class="mb-3"><i class="bi bi-file-earmark-text me-2"></i> Resumen de la licencia actual</h6>
-  <ul class="list-unstyled mb-0">
-    <li><strong>Docente:</strong> {{ licencia.docente.nombre }}</li>
-    <li><strong>Motivo:</strong> {{ licencia.motivo }}</li>
-    <li><strong>Estado:</strong> {{ licencia.estado|capitalize }}</li>
-    <li><strong>Inicio:</strong> {{ licencia.fecha_inicio.strftime('%d/%m/%Y') }}</li>
-    <li><strong>Fin:</strong> {{ licencia.fecha_fin.strftime('%d/%m/%Y') }}</li>
-    <li><strong>Aprobado por:</strong> {{ licencia.aprobado_por or '—' }}</li>
-  </ul>
-</div>
+      <h6 class="mb-3"><i class="bi bi-file-earmark-text me-2"></i> Resumen de la licencia actual</h6>
+      <ul class="list-unstyled mb-0">
+        <li><strong>Docente:</strong> {{ licencia.docente.nombre }}</li>
+        <li><strong>Motivo:</strong> {{ licencia.motivo }}</li>
+        <li><strong>Estado:</strong> {{ licencia.estado|capitalize }}</li>
+        <li><strong>Inicio:</strong> {{ licencia.fecha_inicio.strftime('%d/%m/%Y') }}</li>
+        <li><strong>Fin:</strong> {{ licencia.fecha_fin.strftime('%d/%m/%Y') }}</li>
+        <li><strong>Aprobado por:</strong> {{ licencia.aprobado_por or '—' }}</li>
+      </ul>
+    </div>
+
     <form method="POST" action="{{ url_for('licencias.editar_licencia', id=licencia.id) }}">
+      <!-- ✅ Token CSRF -->
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
       <div class="row g-3">
         <div class="col-md-6">
           <label for="docente_id" class="form-label">Docente</label>
           <select name="docente_id" id="docente_id" class="form-select" required>
             {% for d in docentes %}
-            <option value="{{ d.id }}" {% if d.id == licencia.docente_id %}selected{% endif %}>{{ d.nombre }}</option>
+              <option value="{{ d.id }}" {% if d.id == licencia.docente_id %}selected{% endif %}>{{ d.nombre }}</option>
             {% endfor %}
           </select>
         </div>
+
         <div class="col-md-3">
           <label for="fecha_inicio" class="form-label">Inicio</label>
           <input type="date" name="fecha_inicio" id="fecha_inicio" class="form-control" value="{{ licencia.fecha_inicio }}" required>
         </div>
+
         <div class="col-md-3">
           <label for="fecha_fin" class="form-label">Fin</label>
           <input type="date" name="fecha_fin" id="fecha_fin" class="form-control" value="{{ licencia.fecha_fin }}" required>
         </div>
+
         <div class="col-md-6">
           <label for="motivo" class="form-label">Motivo</label>
           <input type="text" name="motivo" id="motivo" class="form-control" value="{{ licencia.motivo }}" required>
         </div>
+
         <div class="col-md-3">
           <label for="estado" class="form-label">Estado</label>
           <select name="estado" id="estado" class="form-select">
@@ -54,6 +62,7 @@
             <option value="pendiente" {% if licencia.estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
           </select>
         </div>
+
         <div class="col-md-3">
           <label for="aprobado_por" class="form-label">Aprobado por</label>
           <input type="text" name="aprobado_por" id="aprobado_por" class="form-control" value="{{ licencia.aprobado_por }}">

@@ -10,16 +10,21 @@
                 </div>
                 <div class="card-body">
                     <form method="POST">
+                        <!-- ✅ Token CSRF obligatorio -->
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
                         <div class="mb-3">
                             <label for="username" class="form-label">Nombre de Usuario</label>
                             <input type="text" class="form-control" id="username" name="username" required>
                             <div class="form-text">Solo letras, números y guiones bajos</div>
                         </div>
+
                         <div class="mb-3">
                             <label for="password" class="form-label">Contraseña</label>
                             <input type="password" class="form-control" id="password" name="password" required minlength="6">
                             <div class="form-text">Mínimo 6 caracteres</div>
                         </div>
+
                         <div class="mb-3">
                             <label for="rol" class="form-label">Rol</label>
                             <select class="form-select" id="rol" name="rol" required>
@@ -28,6 +33,7 @@
                                 <option value="talento_humano">Talento Humano</option>
                             </select>
                         </div>
+
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bi bi-check-circle me-2"></i>Crear Usuario
@@ -43,4 +49,3 @@
     </div>
 </div>
 {% endblock %}
-

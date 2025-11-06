@@ -101,3 +101,5 @@ def dashboard_home():
         total_docentes=total_docentes,
         hoy=hoy
     )
+
+    

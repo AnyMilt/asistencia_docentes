@@ -1,15 +1,18 @@
 {% extends 'base.html' %}
 {% block content %}
 <form method="POST" class="row g-3">
+  <!-- ✅ Token CSRF -->
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
   <!-- Docente con búsqueda AJAX -->
   <div class="col-md-6">
     <label class="form-label">👤 Docente</label>
     <select class="form-select" name="docente_id" required>
-  <option value="">Seleccione un docente</option>
-  {% for d in docentes %}
-    <option value="{{ d.id }}">{{ d.nombre }}</option>
-  {% endfor %}
-</select>
+      <option value="">Seleccione un docente</option>
+      {% for d in docentes %}
+        <option value="{{ d.id }}">{{ d.nombre }}</option>
+      {% endfor %}
+    </select>
   </div>
 
   <!-- Fechas -->
@@ -55,6 +58,4 @@
 <!-- Select2 CSS & JS -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-
 {% endblock %}
